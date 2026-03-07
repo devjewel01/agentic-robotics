@@ -9,7 +9,7 @@
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/agentic-robotics.git
+https://github.com/devjewel01/Agentic-Robotics
 cd agentic-robotics
 
 # Use with Cursor IDE

@@ -55,6 +55,22 @@ cap.release()
 
 ## Core Concepts
 
+### Sensor and device reference
+
+| Sensor type | Output | Rate | Best for |
+|-------------|--------|------|----------|
+| RGB camera | (H,W,3) uint8 | 30–120 Hz | Detection, tracking, visual servoing |
+| Stereo | (H,W,3)×2 | 30–90 Hz | Dense depth (passive) |
+| Structured light / ToF | (H,W) float + RGB | 30 Hz | Indoor, short–medium range |
+| Event camera | Events (x,y,t,p) | µs | High-speed, HDR |
+
+| Device | SDK/Driver | ROS2 package |
+|--------|------------|--------------|
+| Intel RealSense | pyrealsense2 | realsense2_camera |
+| Stereolabs ZED | pyzed | zed_wrapper |
+| Luxonis OAK-D | depthai | depthai_ros |
+| USB webcam | OpenCV VideoCapture | usb_cam / v4l2_camera |
+
 ### 1. Camera Calibration
 
 **Pinhole Camera Model:**

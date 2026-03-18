@@ -42,7 +42,7 @@ This project is actively being developed. Below is the current status:
 - **Phase 4** (AI & Advanced): isaac-sim, mujoco, sim-to-real, learning-robotics, edge-ml-deployment, robot-architecture, safety-systems ✓
 
 ### 🚧 Remaining (Phase 5)
-- **Skills**: ros2-web-bridge, gpio-i2c-spi, sensor-actuator-drivers, rtos-micro-ros, docker-ros2-ci, deployment-fleet
+- **Skills**: gpio-i2c-spi, sensor-actuator-drivers, rtos-micro-ros, deployment-fleet
 - **Guides**: production-deployment.md, testing-strategy.md
 - **Templates**: Starter templates for ROS2 packages, URDF, Docker
 
@@ -55,7 +55,7 @@ See [plan.md](plan.md) for full roadmap details.
 |-------|-------------|--------|
 | [ros2](skills/ros2/SKILL.md) | ROS2 development: nodes, topics, services, actions, launch files, QoS, lifecycle, DDS | ✅ |
 | [ros2-control](skills/ros2-control/SKILL.md) | ros2_control framework: hardware interfaces, controllers, transmissions | ✅ |
-| ros2-web-bridge | Web integration: rosbridge, FastAPI, WebSocket streaming, REST APIs | 🚧 |
+| [ros2-web-bridge](skills/ros2-web-bridge/SKILL.md) | Web integration: rosbridge, FastAPI, WebSocket streaming, REST APIs | ✅ |
 | [robot-modeling](skills/robot-modeling/SKILL.md) | URDF, Xacro, TF2 transforms, robot state publisher | ✅ |
 
 ### Simulation
@@ -119,8 +119,30 @@ See [plan.md](plan.md) for full roadmap details.
 ### DevOps & Production
 | Skill | Description | Status |
 |-------|-------------|--------|
-| docker-ros2-ci | Docker builds, pytest, launch_testing, GitHub Actions | 🚧 |
+| [robot-bringup](skills/robot-bringup/SKILL.md) | systemd, layered launch, udev, watchdog, production bringup | ✅ |
+| [docker-ros2-ci](skills/docker-ros2-ci/SKILL.md) | Docker builds, docker-compose, DDS in containers, CI with colcon | ✅ |
 | deployment-fleet | OTA updates, fleet management, logging, diagnostics | 🚧 |
+
+## Commands
+
+Quick CLI reference for daily use and AI-assisted workflows:
+
+| File | Description |
+|------|-------------|
+| [commands/ros2.md](commands/ros2.md) | colcon build/test, `ros2 node/topic/service/action/param`, rqt, tf2_tools, ros2 doctor |
+
+## Rules
+
+Project-wide conventions and always-on rules for ROS2 and robotics projects. Use in Cursor rules, Claude project instructions, or as team standards:
+
+| File | Description |
+|------|-------------|
+| [rules/ros2-general.md](rules/ros2-general.md) | Package naming, file structure, launch, params, logging |
+| [rules/ros2-nodes.md](rules/ros2-nodes.md) | Node design: parameters first, pub/sub order, QoS, lifecycle |
+| [rules/ros2-communication.md](rules/ros2-communication.md) | Topic naming, QoS selection, message/service packages, TF2 |
+| [rules/robotics-testing.md](rules/robotics-testing.md) | Unit, integration, launch tests; pytest, launch_testing |
+| [rules/clean-architecture.md](rules/clean-architecture.md) | Optional: domain / application / infrastructure layers |
+| [rules/robot-specific.md](rules/robot-specific.md) | Optional: URDF, TF tree, Nav2, sensor/motor patterns |
 
 ## Usage
 

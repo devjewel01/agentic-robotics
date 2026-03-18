@@ -10,6 +10,19 @@ version: "1.0.0"
 
 Software architecture patterns for robust robot systems. This skill covers behavior trees, FSMs, state estimation, and distributed systems.
 
+## The robot software stack
+
+Every robot system follows a layered architecture. Information flows up through perception; decisions flow down through control. Keep the application layer away from direct hardware access.
+
+```
+Application layer    — Mission planning, task allocation, UI
+Behavioral layer     — Behavior trees, FSMs, decision-making
+Functional layer     — Perception, planning, control, estimation
+Communication layer — ROS2, DDS, shared memory
+Hardware abstraction — Drivers, sensor/actuator interfaces
+Hardware layer      — Cameras, LiDARs, motors, grippers
+```
+
 ## When to Use
 
 - Designing robot behavior hierarchies

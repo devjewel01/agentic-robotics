@@ -505,6 +505,30 @@ rosidl_generate_interfaces(${PROJECT_NAME}
 )
 ```
 
+### Pattern 4: Runtime parameter updates (parameter callback)
+
+Use `add_on_set_parameters_callback` to react to dynamic reconfigure–style updates without restarting the node.
+
+```python
+from rcl_interfaces.msg import SetParametersResult
+from rclpy.parameter import Parameter
+
+def __init__(self):
+    super().__init__('my_node')
+    self.declare_parameter('confidence_threshold', 0.7)
+    self.threshold = self.get_parameter('confidence_threshold').value
+    self.add_on_set_parameters_callback(self._param_callback)
+
+def _param_callback(self, params):
+    for p in params:
+        if p.name == 'confidence_threshold':
+            self.threshold = p.value
+            self.get_logger().info(f'Threshold updated to {p.value}')
+    return SetParametersResult(successful=True)
+```
+
+For parameter descriptors (ranges, descriptions) use `declare_parameter` with `ParameterDescriptor` and optional `FloatingPointRange` / `IntegerRange` so tools and UIs can show constraints.
+
 ## Anti-Patterns
 
 ### ❌ Creating publishers/subscribers in callbacks

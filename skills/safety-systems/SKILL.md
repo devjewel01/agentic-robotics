@@ -10,6 +10,20 @@ version: "1.0.0"
 
 Safety and security for robotic systems. This skill covers functional safety standards, SROS2, E-stops, and risk assessment.
 
+## Security: robot attack surface
+
+Cyber vulnerabilities on robots become physical risks (unauthorized motion, sensor spoofing). Key vectors:
+
+| Vector | Impact |
+|--------|--------|
+| Unauthenticated `/cmd_vel` | Robot moves unexpectedly — injury or damage |
+| Sensor spoofing (`/scan`, `/camera/image`) | Wrong decisions, collisions |
+| Open DDS discovery | Full topic graph visible to anyone on the network |
+| USB/serial physical access | Root shell, firmware flash |
+| Unsigned firmware OTA | Persistent backdoor in motor controllers |
+
+SROS2 adds DDS authentication, encryption, and access control. Use it for production and multi-tenant networks.
+
 ## When to Use
 
 - Designing emergency stop systems
@@ -30,6 +44,8 @@ sudo apt install ros-humble-sros2
 ros2 security create_keystore ~/sros2_keystore
 ros2 security create_enclave ~/sros2_keystore /robot/navigation
 ```
+
+Create one enclave per fully-qualified node name. Set `ROS_SECURITY_KEYSTORE` and `ROS_SECURITY_STRATEGY=Enforce` when launching nodes. Use governance XML to require encryption and authentication; use permissions XML to allow only specific topics/services per enclave.
 
 ## Core Concepts
 

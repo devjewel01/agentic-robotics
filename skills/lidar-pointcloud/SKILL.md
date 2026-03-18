@@ -56,6 +56,18 @@ o3d.io.write_point_cloud("downsampled.pcd", downsampled)
 
 ## Core Concepts
 
+### LiDAR and depth device reference
+
+| Device | Type | SDK/Driver | ROS2 package |
+|--------|------|------------|--------------|
+| Velodyne | Spinning LiDAR | velodyne_driver | velodyne |
+| Ouster | Spinning LiDAR | ouster-sdk | ros2_ouster |
+| Livox | Solid-state LiDAR | livox_sdk | livox_ros2_driver |
+| Intel RealSense | Structured light / ToF | pyrealsense2 | realsense2_camera (depth) |
+| Stereolabs ZED | Stereo + IMU | pyzed | zed_wrapper |
+
+Spinning LiDAR: 0.5–200 m, 10–20 Hz. Solid-state: 0.5–200 m, 10–30 Hz. Use sensor QoS (best-effort, depth 1–5) for LiDAR topics.
+
 ### 1. Point Cloud Representation
 
 **ROS2 Message (sensor_msgs/PointCloud2):**

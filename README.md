@@ -26,7 +26,7 @@ cd agentic-robotics
 
 A comprehensive skill library covering the full robotics engineering stack:
 
-- **28 consolidated skills** — Each skill is substantial (500-3000 lines), covering a complete domain
+- **29 consolidated skills** — Each skill is substantial (500-3000 lines), covering a complete domain
 - **Tool-agnostic** — Plain markdown with YAML frontmatter, consumable by any AI tool
 - **Real-world focus** — Anti-patterns and failure modes alongside working code
 - **Progressive disclosure** — Quick start at top, deep reference below
@@ -35,18 +35,16 @@ A comprehensive skill library covering the full robotics engineering stack:
 
 This project is actively being developed. Below is the current status:
 
-### ✅ Completed (Phase 1-4)
+### ✅ Completed (Phase 1-5)
 - **Phase 1** (Foundation): ros2, robot-modeling, gazebo, camera-vision, ros2-control ✓
 - **Phase 2** (Navigation): nav2, sensor-fusion-slam, path-planning, lidar-pointcloud, control-systems ✓
 - **Phase 3** (Manipulation & Hardware): moveit2, grasping-force-control, serial-can-protocols, microcontrollers, realtime-motor-control ✓
 - **Phase 4** (AI & Advanced): isaac-sim, mujoco, sim-to-real, learning-robotics, edge-ml-deployment, robot-architecture, safety-systems ✓
+- **Phase 5** (Embedded, DevOps & Production): gpio-i2c-spi, sensor-actuator-drivers, rtos-micro-ros, deployment-fleet, robot-bringup, ros2-web-bridge, docker-ros2-ci ✓
+- **Phase 5 Guides**: production-deployment.md, testing-strategy.md ✓
 
-### 🚧 Remaining (Phase 5)
-- **Skills**: gpio-i2c-spi, sensor-actuator-drivers, rtos-micro-ros, deployment-fleet
-- **Guides**: production-deployment.md, testing-strategy.md
+### 🚧 Remaining
 - **Templates**: Starter templates for ROS2 packages, URDF, Docker
-
-See [plan.md](plan.md) for full roadmap details.
 
 ## Skill Catalog
 
@@ -95,14 +93,14 @@ See [plan.md](plan.md) for full roadmap details.
 | Skill | Description | Status |
 |-------|-------------|--------|
 | [serial-can-protocols](skills/serial-can-protocols/SKILL.md) | UART, RS485, CAN 2.0, CANopen, J1939, EtherCAT | ✅ |
-| gpio-i2c-spi | GPIO, PWM, interrupts, I2C, SPI protocols | 🚧 |
-| sensor-actuator-drivers | Custom driver development, motor/servo/stepper drivers | 🚧 |
+| [gpio-i2c-spi](skills/gpio-i2c-spi/SKILL.md) | GPIO, PWM, interrupts, I2C, SPI protocols on Linux/RPi | ✅ |
+| [sensor-actuator-drivers](skills/sensor-actuator-drivers/SKILL.md) | Custom ROS2 driver development: IMU, encoder, motor, servo | ✅ |
 
 ### Embedded Systems
 | Skill | Description | Status |
 |-------|-------------|--------|
 | [microcontrollers](skills/microcontrollers/SKILL.md) | STM32, ESP32, Arduino, bare-metal firmware, HAL patterns | ✅ |
-| rtos-micro-ros | FreeRTOS, Zephyr, real-time scheduling, micro-ROS | 🚧 |
+| [rtos-micro-ros](skills/rtos-micro-ros/SKILL.md) | FreeRTOS task scheduling, micro-ROS on STM32/ESP32, real-time patterns | ✅ |
 
 ### AI & Learning
 | Skill | Description | Status |
@@ -121,7 +119,7 @@ See [plan.md](plan.md) for full roadmap details.
 |-------|-------------|--------|
 | [robot-bringup](skills/robot-bringup/SKILL.md) | systemd, layered launch, udev, watchdog, production bringup | ✅ |
 | [docker-ros2-ci](skills/docker-ros2-ci/SKILL.md) | Docker builds, docker-compose, DDS in containers, CI with colcon | ✅ |
-| deployment-fleet | OTA updates, fleet management, logging, diagnostics | 🚧 |
+| [deployment-fleet](skills/deployment-fleet/SKILL.md) | OTA updates, fleet management, centralized logging, diagnostics | ✅ |
 
 ## Commands
 
@@ -189,8 +187,8 @@ Multi-skill workflow guides:
 | [Sensor Calibration](guides/sensor-calibration.md) | End-to-end calibration workflow | ✅ |
 | [Hardware Integration](guides/hardware-integration.md) | Wiring to first ROS2 topic | ✅ |
 | [Sim-to-Real Pipeline](guides/sim-to-real-pipeline.md) | Full sim-to-real transfer | ✅ |
-| Production Deployment | Pre-deployment checklist | 🚧 |
-| Testing Strategy | Unit → integration → field testing | 🚧 |
+| [Production Deployment](guides/production-deployment.md) | Pre-deployment checklist, staging, rollback | ✅ |
+| [Testing Strategy](guides/testing-strategy.md) | Unit → integration → sim → HIL → field testing | ✅ |
 
 ## Contributing
 

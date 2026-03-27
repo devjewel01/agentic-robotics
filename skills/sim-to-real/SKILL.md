@@ -360,6 +360,191 @@ action_limited = lowpass_filter(action_delayed, bandwidth)
 | Unstable on real | Unmodeled dynamics | Add actuator models, delays |
 | Poor generalization | Insufficient randomization | Wider parameter ranges |
 
+## Workflow Integration
+
+Sim-to-real is a pipeline skill — it connects the simulation training environment to physical robot deployment and relies on several other skills in the library. Below is the full flow with explicit cross-references.
+
+### Full Pipeline Overview
+
+```
+[gazebo]           Build the training environment and sensor models
+     │
+     ▼
+[learning-robotics] Train the policy (BC, DAgger, RL) inside the sim
+     │
+     ▼
+[sim-to-real]      Domain randomize, validate, adapt ← YOU ARE HERE
+     │              System ID to tighten the sim model
+     ▼
+[sensor-fusion-slam] Validate real sensor behaviour against sim expectations
+     │               Calibrate IMU/LiDAR against ground-truth data collected in sim
+     ▼
+[robot-bringup]    Deploy validated policy: systemd service, watchdog, launch layers
+     │
+     ▼
+[edge-ml-deployment] Quantize & optimize the policy for on-board inference (ARM64 / Jetson)
+```
+
+### Step 1 — Build the Training Environment (`gazebo`)
+
+The `gazebo` skill provides SDF world templates, sensor noise models, and ROS 2 bridges. Before starting domain randomization here, the Gazebo environment must already be set up with:
+
+- A physics-accurate SDF model whose inertial parameters will be perturbed by `DomainRandomizedEnv`
+- Sensor plugins that expose `/scan`, `/imu/data`, and `/camera/*` at the same topic names the real robot uses
+- A `ros_gz_bridge` mapping so the policy observes identical topic structures in sim and real
+
+```bash
+# From the gazebo skill — start a ROS 2-bridged Gazebo world
+ros2 launch orbibot_bringup sim.launch.py world:=indoor_flat.sdf
+```
+
+Reference the `gazebo` skill for SDF physics tuning (`<mu>`, `<mu2>`, joint damping) before running `SystemIdentifier` — you want the simulation baseline to be plausible before widening the randomization ranges.
+
+### Step 2 — Train the Policy (`learning-robotics`)
+
+The `learning-robotics` skill covers behavior cloning, DAgger, and RL training loops. The sim-to-real workflow receives a trained checkpoint from that skill and focuses only on whether it transfers.
+
+```python
+# Handoff from learning-robotics: load checkpoint trained inside Gazebo
+from stable_baselines3 import PPO
+
+policy = PPO.load("checkpoints/indoor_nav_policy.zip")
+
+# Wrap the real env for evaluation (sim-to-real skill takes over here)
+validator = SimToRealValidator(policy, sim_env=gazebo_env, real_robot=orbibot)
+sim_rewards, real_rewards = validator.validate_policy(num_episodes=5)
+```
+
+If the transfer gap (`sim_rewards.mean() - real_rewards.mean()`) exceeds 20 %, go back to `learning-robotics` and retrain with the `DomainRandomizedEnv` wrapper from this skill before re-evaluating.
+
+### Step 3 — System Identification (this skill)
+
+Run `SystemIdentifier` against real OrbiBot hardware to capture the true motor constants (inertia `J`, back-EMF `K`, winding resistance `R`) and feed them back into the Gazebo SDF:
+
+```python
+# Collect step-response data from real robot
+identifier = SystemIdentifier()
+params = identifier.identify(t_data, u_data, y_data)
+
+# Write identified params to SDF via a Jinja template
+import subprocess
+subprocess.run([
+    "python3", "scripts/update_sdf_params.py",
+    "--J", str(params["J"]),
+    "--b", str(params["b"]),
+    "--K", str(params["K"]),
+])
+
+# Rebuild the Gazebo world with updated physics
+subprocess.run(["ros2", "launch", "orbibot_bringup", "sim.launch.py"])
+```
+
+This tightens the simulation and narrows the randomization range needed in `DomainRandomizedEnv`, reducing the compute cost in the `learning-robotics` training loop.
+
+### Step 4 — Sensor Calibration Validation (`sensor-fusion-slam`)
+
+After the policy is validated behaviorally, verify that the EKF and SLAM stack behave the same way in real as they did in simulation. The `sensor-fusion-slam` skill provides the EKF configuration and calibration utilities.
+
+Key checks before declaring transfer success:
+
+```python
+# Compare odometry drift over a 5 m straight-line run
+# (sim vs real, recorded as ROS 2 bags)
+
+import subprocess
+
+# Record real run
+subprocess.run(["ros2", "bag", "record", "-o", "real_run",
+                "/odometry/filtered", "/odom", "/imu/data_filtered"])
+
+# Replay sim run through the same EKF node
+subprocess.run(["ros2", "bag", "play", "sim_run.bag"])
+
+# Then use RealityGapAnalyzer on /odometry/filtered from both bags
+analyzer = RealityGapAnalyzer()
+metrics = analyzer.compute_metrics()
+print(metrics)  # steady_state_error_pct < 5 % is acceptable
+```
+
+If IMU bias or LiDAR scan-matching diverges, the `sensor-fusion-slam` skill's calibration workflow (Madgwick tuning, EKF `process_noise_covariance`) should be revisited before re-running the policy.
+
+### Step 5 — Deploy the Policy (`robot-bringup`)
+
+Once transfer is validated, the `robot-bringup` skill handles production deployment. The validated policy becomes a systemd service with a watchdog:
+
+```ini
+# /etc/systemd/system/orbibot-policy.service
+# Generated from the robot-bringup skill template
+
+[Unit]
+Description=OrbiBot Sim-Trained Policy Inference
+After=orbibot-hardware.service orbibot-localization.service
+Requires=orbibot-hardware.service
+
+[Service]
+Type=simple
+User=orbibot
+Environment="POLICY_PATH=/opt/orbibot/policies/indoor_nav_policy.zip"
+ExecStart=/opt/ros/jazzy/bin/ros2 run orbibot_agent policy_runner \
+    --policy ${POLICY_PATH}
+Restart=on-failure
+WatchdogSec=10s
+
+[Install]
+WantedBy=multi-user.target
+```
+
+The `robot-bringup` skill also defines the launch ordering: hardware node → localization → policy runner, ensuring the policy never receives stale sensor data on startup.
+
+### Step 6 — Optimize for On-Board Inference (`edge-ml-deployment`)
+
+On OrbiBot (Raspberry Pi 5, ARM64, no dedicated GPU), the policy must run through ONNX Runtime rather than TensorRT. The `edge-ml-deployment` skill covers the full quantization pipeline.
+
+```python
+# Export sim-trained SB3 policy to ONNX for ARM64 deployment
+# (bridges sim-to-real → edge-ml-deployment)
+import torch
+import onnx
+
+# SB3 policy wrapping: extract the MLP actor
+actor = policy.policy.mlp_extractor.policy_net
+
+dummy_obs = torch.randn(1, obs_dim)
+torch.onnx.export(
+    actor,
+    dummy_obs,
+    "indoor_nav_actor.onnx",
+    input_names=["observation"],
+    output_names=["action"],
+    opset_version=13,
+    dynamic_axes={"observation": {0: "batch"}, "action": {0: "batch"}},
+)
+
+onnx.checker.check_model(onnx.load("indoor_nav_actor.onnx"))
+print("ONNX export validated — ready for edge-ml-deployment quantization step")
+```
+
+After export, follow the `edge-ml-deployment` skill's ONNX Runtime quantization and ROS 2 inference node patterns to achieve target latency on the RPi 5.
+
+### Decision Matrix: When to Iterate vs. Deploy
+
+| Transfer Gap | Steady-State Odom Error | Action |
+|---|---|---|
+| < 10 % | < 5 % | Deploy via `robot-bringup` |
+| 10–20 % | < 10 % | Widen domain randomization, retrain 1 phase |
+| 20–40 % | Any | Run `SystemIdentifier`, update SDF, full retrain |
+| > 40 % | Any | Collect real demonstrations, use `learning-robotics` DAgger |
+
+### Quick Cross-Skill Reference
+
+| This skill does | Calls into |
+|---|---|
+| Simulation environment setup | `gazebo` |
+| Policy training and checkpointing | `learning-robotics` |
+| EKF / SLAM sensor calibration check | `sensor-fusion-slam` |
+| Production systemd deployment | `robot-bringup` |
+| ARM64 / ONNX Runtime optimization | `edge-ml-deployment` |
+
 ## Changelog
 
 ### v1.0.0 (2026-03-07)
